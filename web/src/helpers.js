@@ -12,7 +12,6 @@ export function calculateWinnerByRows(squares) {
     }
 
     let lines_string = lines.join('-')
-    console.log(lines_string)
 
     if (/XXXX/.test(lines_string)) {
         return 'X'
