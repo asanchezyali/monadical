@@ -35,7 +35,7 @@ const Start = (p) => {
             setState({serverConfirmed:true})
         })
 
-        socket.on('errorMessage', (message) => this.displayError(message))
+        socket.on('errorMessage', (message) => displayError(message))
         return () => {
             socket.disconnect()
         }, []
@@ -72,11 +72,11 @@ const Start = (p) => {
     }
 
     const stepBack = ()=>{
-        this.setState({step: state.step - 1})
+        setState({step: state.step - 1})
     }
 
     const stepForward = () =>{
-        this.setState({step: state.step + 1})
+        setState({step: state.step + 1})
     }
 
     const onTyping = (e)=>{
@@ -86,9 +86,9 @@ const Start = (p) => {
     }
 
     const displayError = (message) =>{
-        this.setState({error:true, errorMessage:message, loading:false})
+        setState({error:true, errorMessage:message, loading:false})
         setTimeout(()=>{
-            this.setState({error:false, errorMessage:''})
+            setState({error:false, errorMessage:''})
         }, 3000)
     }
 
