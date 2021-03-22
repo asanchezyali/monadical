@@ -1,8 +1,21 @@
-
-import React from 'react';
+import React from 'react'
+import { useDispatch } from 'react-redux'
+import {
+    updateRoom,
+    updateName
+} from '../../redux/actions'
 
 const Input = (props) => {
-    const {name, placeholder, value, onChange} = props
+    const {name, placeholder, value} = props
+    const dispatch = useDispatch()
+
+    const onTyping = (e)=>{
+        if (e.target.name === 'name'){
+            dispatch(updateName(e.target.value))
+        }
+        if (e.target.name === 'room')
+            dispatch(updateRoom(e.target.value))
+    }
 
     return (
         <input 
@@ -12,7 +25,7 @@ const Input = (props) => {
             id={name} 
             placeholder={placeholder} 
             value={value} 
-            onChange={onChange}
+            onChange={onTyping}
         />
     );
 }

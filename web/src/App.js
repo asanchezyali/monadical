@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
 
 import Start from './components/Start'
-import Board from './components/Board'
+import Board from './components/Board/index'
 
 import { Provider } from 'react-redux';
 import store from './redux/store';

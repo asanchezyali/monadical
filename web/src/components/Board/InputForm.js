@@ -3,16 +3,14 @@ import Input from './Input'
 import ChoiceButton from './ChoiceButton'
 
 const InputForm = (props) => {
-    const {stepBack, onSubmit, onTyping, newGame, name, room} = props
+    const {stepBack, onSubmit, newGame, name, room} = props
     
-
     if (newGame){
         return (
             <div className="input-container">
                 <Input 
                 name='name'
                 placeholder='Your Name...'
-                onChange = {onTyping}
                 value = {name}
                 />
                 <div className='nav-container'>
@@ -20,20 +18,18 @@ const InputForm = (props) => {
                     <ChoiceButton type='nav-forward' choice='submit' onChoice={onSubmit} label="Let's Go"/>
                 </div>
             </div>
-        );
+        )
     } else {
         return (
             <div className="input-container">
                 <Input 
                     name='name'
                     placeholder='Your Name...'
-                    onChange = {onTyping}
                     value = {name}
                 />
                 <Input 
                     name='room'
                     placeholder='Room ID...'
-                    onChange = {onTyping}
                     value = {room}
                 />
             <div className='nav-container'>
@@ -49,7 +45,7 @@ const InputForm = (props) => {
                 
             </div>
             </div>
-        );
+        )
     }
     
 }

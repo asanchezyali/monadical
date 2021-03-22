@@ -18,7 +18,7 @@ export const updateName = (payload) => {
 
 export const UPDATE_NEWGAME = 'UPDATE_NEWGAME'
 
-export const updateNewgame = (payload) => {
+export const updateNewGame = (payload) => {
     return {
         type: UPDATE_NEWGAME,
         payload: payload

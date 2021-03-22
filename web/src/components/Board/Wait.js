@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 
 const Wait = ({room, display}) => {
     const textArea = useRef(null)
-    const onClick = () =>{
+    const onClick = () => {
         textArea.current.select()
         document.execCommand('copy')
     }

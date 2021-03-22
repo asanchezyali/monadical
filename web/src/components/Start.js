@@ -1,106 +1,100 @@
+import React, { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import {Redirect} from 'react-router-dom'
 
-import React, { useState, useRef, useEffect} from 'react'
 import Choice from './Board/Choice'
 import InputForm from './Board/InputForm'
 import Loading from './Board/Loading'
 import Error from './Board/Error'
 import logo from './logo.png'
 
-import {Redirect} from 'react-router-dom'
-
 import io from "socket.io-client"
+
+import {
+    updateNewGame,
+    updateStep,
+    updateLoading,
+    updateError,
+    updateErrorMessage,
+} from '../redux/actions'
+
 const socket = io.connect("http://localhost:4000")
 
 
 const Start = (p) => {
 
     const [state, setState] = useState({
-        step: 1,
-        name: '',
-        newGame: null,
         room: '',
-        loading: false,
         serverConfirmed: false,
-        error: false,
-        errorMessage: '',
     })
 
+    const dispatch = useDispatch()
+    const globalState = useSelector(store => store.state)
 
-    useEffect(() => {        
+    useEffect(() => {    
         socket.on('newGameCreated', (room) =>{
-            console.log('A new game created.')
-            setState({serverConfirmed:true, room:room})
+            setState(state => ({...state, serverConfirmed:true, room:room}))
         })
-
         socket.on('joinConfirmed', ()=>{
-            setState({serverConfirmed:true})
+            setState(state => ({...state, serverConfirmed: true}))
         })
-
         socket.on('errorMessage', (message) => displayError(message))
         return () => {
             socket.disconnect()
-        }, []
-    })
+        }
+    }, [])
+
 
     const onChoice = (choice)=>{
-        console.log('Your election is for a new game')
         const gameChoice = choice==='new'?true:false
-        const newState = {newGame: gameChoice}
-        setState(newState)
-        setState({step: state.step + 1})
+        dispatch(updateNewGame(gameChoice))
+        dispatch(updateStep(globalState.step + 1))
     }
 
     const validate = ()=>{
-        if (state.newGame){
-            return !(state.name==='')
+        if (globalState.newGame){
+            return !(globalState.name==='')
         } else {
-            return !(state.name==='') && !(state.room==='')
+            return !(globalState.name==='') && !(globalState.room==='')
         }
     }
 
     const onSubmit = ()=>{
-        setState({loading: true})
+        dispatch(updateLoading(true))
         if (validate()){
-            if (state.newGame){
+            if (globalState.newGame){
+                console.log('Creee un nuevo juego')
                 socket.emit('newGame')
             } else {
-                socket.emit('joining', { room:state.room })
+                console.log('Me uno a un juego')
+                socket.emit('joining', { room:globalState.room })
             }
         } else {
-            setTimeout(()=>setState({ loading: false }), 500)
-            displayError(state.newGame? 'Please fill out your name':'Please fill out your name and room id')
+            setTimeout(()=>dispatch(updateLoading(false)), 500)
+            displayError(globalState.newGame? 'Please fill out your name':'Please fill out your name and room id')
         }
     }
 
     const stepBack = ()=>{
-        setState({step: state.step - 1})
-    }
-
-    const stepForward = () =>{
-        setState({step: state.step + 1})
-    }
-
-    const onTyping = (e)=>{
-        console.log(e.target.name)
-        const target = e.target.name
-        const newState = {[target]:e.target.value}
-        console.log('estoy puto')
-        setState(newState)
+        dispatch(updateStep(globalState.step - 1))
     }
 
     const displayError = (message) =>{
-        setState({error:true, errorMessage:message, loading:false})
+        dispatch(updateError(true))
+        dispatch(updateErrorMessage(message))
+        dispatch(updateLoading(false))
         setTimeout(()=>{
-            setState({error:false, errorMessage:''})
+            dispatch(updateError(false))
+            dispatch(updateErrorMessage(''))
         }, 3000)
     }
 
     if (state.serverConfirmed){
         return(
-            <Redirect to={`/game?room=${state.room}&name=${state.name}`} />
+            <Redirect to={`/game?room=${state.room}&name=${globalState.name}`} />
         )
     } else {
-        switch(state.step){
+        switch(globalState.step){
             case(1):
                 return (
                     <Choice logo={logo} onChoice={onChoice}/>
@@ -108,15 +102,14 @@ const Start = (p) => {
             case(2):
                 return (
                     <>
-                        <Loading loading={state.loading}/>
-                        <Error display={state.error} message={state.errorMessage}/>
+                        <Loading loading={globalState.loading}/>
+                        <Error display={globalState.error} message={globalState.errorMessage}/>
                         <InputForm 
                             stepBack={stepBack} 
                             onSubmit={onSubmit} 
-                            onTyping={e => onTyping(e)}
-                            newGame={state.newGame}
-                            name = {state.name}
-                            room = {state.room}/> 
+                            newGame={globalState.newGame}
+                            name={globalState.name}
+                            room={globalState.room}/> 
                     </>
                 );
             default:
