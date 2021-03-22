@@ -28,6 +28,7 @@ const Start = (p) => {
 
     useEffect(() => {        
         socket.on('newGameCreated', (room) =>{
+            console.log('A new game created.')
             setState({serverConfirmed:true, room:room})
         })
 
@@ -42,11 +43,11 @@ const Start = (p) => {
     })
 
     const onChoice = (choice)=>{
+        console.log('Your election is for a new game')
         const gameChoice = choice==='new'?true:false
         const newState = {newGame: gameChoice}
-        setState(newState, ()=>{
-            stepForward()
-        })
+        setState(newState)
+        setState({step: state.step + 1})
     }
 
     const validate = ()=>{
@@ -80,8 +81,10 @@ const Start = (p) => {
     }
 
     const onTyping = (e)=>{
+        console.log(e.target.name)
         const target = e.target.name
         const newState = {[target]:e.target.value}
+        console.log('estoy puto')
         setState(newState)
     }
 
@@ -110,7 +113,7 @@ const Start = (p) => {
                         <InputForm 
                             stepBack={stepBack} 
                             onSubmit={onSubmit} 
-                            onTyping={onTyping.bind(this)}
+                            onTyping={e => onTyping(e)}
                             newGame={state.newGame}
                             name = {state.name}
                             room = {state.room}/> 
