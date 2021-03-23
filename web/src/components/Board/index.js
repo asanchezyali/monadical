@@ -1,6 +1,5 @@
 import React, { useState, useEffect} from 'react'
 import {Redirect} from 'react-router-dom'
-
 import Square from './Square';
 import Wait from './Wait'
 import Status from './Status'
@@ -10,14 +9,13 @@ import PlayAgain from './PlayAgain'
 
 import io from 'socket.io-client'
 import qs from 'qs'
-import { version } from 'react-dom';
 const socket = io.connect('http://localhost:4000')
 
 
 
 const Board = (p) => {
     const [state, setState] = useState({
-        game: new Array(9).fill(null),
+        game: new Array(49).fill(null),
         piece: 'X',
         turn: true,
         end: false,
@@ -30,52 +28,48 @@ const Board = (p) => {
         socketID: null
     })
 
-    console.log(state)
+
     useEffect(() => {    
         const {room, name} = qs.parse(window.location.search, {
             ignoreQueryPrefix: true
         })
-        state.room = room
-        setState(state)
-        socket.emit('newRoomJoin', {room, name})
+        setState(state =>({...state, room:room}))
+        let socketID = state.socketID
+        socket.emit('newRoomJoin', {room, name, socketID})
+        
 
         socket.on('waiting', () => {
-            console.log('Waiting ...')
-            state.waiting = true
-            state.currentPlayerScore = 0
-            state.opponentPlayer = []
-            setState(state)
-            console.log(state)
+            setState(state => ({...state, waiting:true, currentPlayerScore: 0, opponentPlayer: []}))
         })
 
         socket.on('starting', ({gameState, players, turn})=> {
-            state.waiting = false
-            setState(state)
+            setState(state => ({...state, waiting:false}))
             gameStart(gameState, players, turn)
         })
 
         socket.on('joinError', () => {
-            state.joinError = true
-            setState(state)
+            setState(state => ({...state, joinError:true}))
         })
 
         socket.on('pieceAssignment', ({piece, id}) => {
-            state.piece = piece
-            state.socketID = id
-            setState(state)
+            setState(state => ({...state, piece:piece, socketID:id}))
         })
 
         socket.on('update', ({gameState, turn}) => handleUpdate(gameState, turn))
         socket.on('winner', ({gameState,id}) => handleWin(id, gameState))
         socket.on('draw', ({gameState}) => handleDraw(gameState))
         socket.on('restart', ({gameState, turn}) => handleRestart(gameState, turn))
-    })
+
+        return () => {
+            socket.disconnect()
+        }
+    }, [state])
+
+
 
     const gameStart = (gameState, players, turn) => {
         const opponent = players.filter(([id]) => id!== state.socketID)[0][1]
-        state.opponentPlayer = [opponent, 0]
-        state.end = false
-        setState(state)
+        setState(state=>({...state, opponentPlayer: [opponent, 0], end: false}))
         setBoard(gameState)
         setTurn(turn)
         setMessage()
@@ -83,6 +77,9 @@ const Board = (p) => {
 
     const handleClick = (index) => {
         const {game, piece, end, turn, room} = state
+        if (!(index % 7 === 0 || index % 7 === 6)){
+            if((game[index-1]===null && game[index+1]===null)) return
+          }
         if (!game[index] && !end && turn){
             socket.emit('move', {room, piece, index})
         }
@@ -98,26 +95,19 @@ const Board = (p) => {
         setBoard(gameState)
         if (state.socketID === id){
           const playerScore = state.currentPlayerScore + 1
-          state.currentPlayerScore = playerScore
-          state.statusMessage = 'You Win'
-          setState(state)
+          setState(state => ({...state, currentPlayerScore: playerScore, statusMessage: 'You Win'}))
         } else {
           const opponentScore = state.opponentPlayer[1] + 1
           const opponent = state.opponentPlayer
           opponent[1] = opponentScore
-          state.opponentPlayer = opponent
-          state.statusMessage = `${this.state.opponentPlayer[0]} Wins`
-          setState(state)
+          setState(state => ({...state, opponentPlayer: opponent, statusMessage: `${this.state.opponentPlayer[0]} Wins`}))
         }
-        state.end = true
-        setState(state)
+        setState(state => ({...state, end: true}))
     }
 
     const handleDraw = (gameState) => {
         setBoard(gameState)
-        state.end = true
-        state.statusMessage = 'Draw'
-        setState(state)
+        setState(state => ({...state, end: true, statusMessage: 'Draw'}))
     }
 
     const playAgainRequest = () => {
@@ -128,29 +118,24 @@ const Board = (p) => {
         setBoard(gameState)
         setTurn(turn)
         setMessage()
-        state.end = false
-        setState(state)
+        setState(state => ({...state, end: false}))
     }
 
     const setMessage = () => {
         const message = state.turn?'Your Turn':`${state.opponentPlayer[0]}'s Turn`
-        state.statusMessage = message
-        setState(state)
+        setState(state => ({...state, statusMessage: message}))
     }
 
     const setTurn = (turn) => {
         if (state.piece === turn){
-            state.turn = true
-            setState(state)
+            setState(state => ({...state, turn: true})) 
         } else {
-            state.turn = false
-            setState(state)
+            setState(state => ({...state, turn: false}))
         }
     }
     
     const setBoard = (gameState) => {
-        state.game = gameState
-        setState(state)
+        setState(state => ({...state, game: gameState}))
     }
 
     const renderSquare = (i) => {
@@ -172,7 +157,7 @@ const Board = (p) => {
         return(<Redirect to={`/`}/>)
     } else {
         const squareArray = []
-        for (let i=0; i<9; i++){
+        for (let i=0; i<49; i++){
             const newSquare = renderSquare(i)
             squareArray.push(newSquare)
         }
