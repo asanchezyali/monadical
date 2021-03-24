@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import React, {useEffect, useState} from 'react'
+import {useDispatch, useSelector} from 'react-redux'
 import {Redirect} from 'react-router-dom'
 
 import Choice from './Board/Choice'
@@ -10,18 +10,12 @@ import logo from './logo.png'
 
 import io from "socket.io-client"
 
-import {
-    updateNewGame,
-    updateStep,
-    updateLoading,
-    updateError,
-    updateErrorMessage,
-} from '../redux/actions'
+import {updateError, updateErrorMessage, updateLoading, updateNewGame, updateStep,} from '../redux/actions'
 
 const socket = io.connect("http://localhost:4000")
 
 
-const Start = (p) => {
+const Start = () => {
 
     const [state, setState] = useState({
         room: '',
@@ -31,11 +25,11 @@ const Start = (p) => {
     const dispatch = useDispatch()
     const globalState = useSelector(store => store.state)
 
-    useEffect(() => {    
-        socket.on('newGameCreated', (room) =>{
-            setState(state => ({...state, serverConfirmed:true, room:room}))
+    useEffect(() => {
+        socket.on('newGameCreated', (room) => {
+            setState(state => ({...state, serverConfirmed: true, room: room}))
         })
-        socket.on('joinConfirmed', ()=>{
+        socket.on('joinConfirmed', () => {
             setState(state => ({...state, serverConfirmed: true}))
         })
         socket.on('errorMessage', (message) => displayError(message))
@@ -45,56 +39,55 @@ const Start = (p) => {
     }, [])
 
 
-    const onChoice = (choice)=>{
-        const gameChoice = choice==='new'?true:false
+    const onChoice = (choice) => {
+        const gameChoice = choice === 'new'
         dispatch(updateNewGame(gameChoice))
         dispatch(updateStep(globalState.step + 1))
     }
 
-    const validate = ()=>{
-        if (globalState.newGame){
-            return !(globalState.name==='')
+    const validate = () => {
+        if (globalState.newGame) {
+            return !(globalState.name === '')
         } else {
-            return !(globalState.name==='') && !(globalState.room==='')
+            return !(globalState.name === '') && !(globalState.room === '')
         }
     }
 
-    const onSubmit = ()=>{
+    const onSubmit = () => {
         dispatch(updateLoading(true))
-        if (validate()){
-            if (globalState.newGame){
-                console.log('Creee un nuevo juego')
+        if (validate()) {
+            if (globalState.newGame) {
                 socket.emit('newGame')
             } else {
-                console.log('Me uno a un juego')
-                socket.emit('joining', { room:globalState.room })
+                console.log(globalState.room)
+                socket.emit('joining', {room: globalState.room})
             }
         } else {
-            setTimeout(()=>dispatch(updateLoading(false)), 500)
-            displayError(globalState.newGame? 'Please fill out your name':'Please fill out your name and room id')
+            setTimeout(() => dispatch(updateLoading(false)), 500)
+            displayError(globalState.newGame ? 'Please fill out your name' : 'Please fill out your name and room id')
         }
     }
 
-    const stepBack = ()=>{
+    const stepBack = () => {
         dispatch(updateStep(globalState.step - 1))
     }
 
-    const displayError = (message) =>{
+    const displayError = (message) => {
         dispatch(updateError(true))
         dispatch(updateErrorMessage(message))
         dispatch(updateLoading(false))
-        setTimeout(()=>{
+        setTimeout(() => {
             dispatch(updateError(false))
             dispatch(updateErrorMessage(''))
         }, 3000)
     }
 
-    if (state.serverConfirmed){
-        return(
-            <Redirect to={`/game?room=${state.room}&name=${globalState.name}`} />
+    if (state.serverConfirmed) {
+        return (
+            <Redirect to={`/game?room=${state.room}&name=${globalState.name}`}/>
         )
     } else {
-        switch(globalState.step){
+        switch (globalState.step) {
             case(1):
                 return (
                     <Choice logo={logo} onChoice={onChoice}/>
@@ -104,19 +97,19 @@ const Start = (p) => {
                     <>
                         <Loading loading={globalState.loading}/>
                         <Error display={globalState.error} message={globalState.errorMessage}/>
-                        <InputForm 
-                            stepBack={stepBack} 
-                            onSubmit={onSubmit} 
+                        <InputForm
+                            stepBack={stepBack}
+                            onSubmit={onSubmit}
                             newGame={globalState.newGame}
                             name={globalState.name}
-                            room={globalState.room}/> 
+                            room={globalState.room}/>
                     </>
                 );
             default:
                 return null
         }
     }
-    
+
 }
 
 
