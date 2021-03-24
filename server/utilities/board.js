@@ -1,11 +1,6 @@
 class Board{
     constructor() {
         this.game = new Array(49).fill(null);
-        this.winStates = [
-            [0, 1, 2], [3, 4, 5],[6, 7, 8],
-            [0, 3, 6], [1, 4, 7],[2, 5, 8],
-            [0, 4, 8], [2, 4, 6]
-        ]
         this.end = false
         this.turn = 'X'
         this.switch = new Map([['X', 'O'], ['O', 'X']])
@@ -25,8 +20,9 @@ class Board{
 
     checkWinner(player){
         const isWinnerByRows = calculateWinnerByRows(this.game) === player 
-        const isWinnierByDigonals = calculateWinnerByDiagonals(this.game) === player
-        return isWinnerByRows || isWinnierByDigonals
+        const isWinnerByDiagonals = calculateWinnerByDiagonals(this.game) === player
+        const isWinnerByColumns = calculateWinnerByColumns(this.game) === player
+        return isWinnerByRows || isWinnerByDiagonals || isWinnerByColumns
     }
     
     checkDraw(){
@@ -40,30 +36,38 @@ class Board{
 }
 
 function calculateWinnerByRows(game) {
-    let lines = []
-
-    for (let i = 0; i < 7; i++) {
-        let row = game.slice(7 * i, 7 * (i + 1))
-        for (let i = 0; i < row.length; i++) {
-            if (row[i] === null) {
-                row[i] = '@'
+    let rows = []
+    for (let index = 0; index < 7; index++) {
+        let row = game.slice(7 * index, 7 * (index + 1))
+        for (let index = 0; index < row.length; index++) {
+            if (row[index] === null) {
+                row[index] = '@'
             }
         }
-        lines.push(row.join(''))
+        rows.push(row.join(''))
+    }
+    let string = rows.join('-')
+    if (/XXXX/.test(string)) { return 'X' }
+    if (/OOOO/.test(string)) { return 'O' }
+    return null
+}
+
+function calculateWinnerByColumns(game) {
+    console.log(game)
+    let columns = []
+    for (let col = 0; col < 7; col++) {
+        for (let row = 0; row < 7; row++){
+            if (game[col + 7 * row] === null) { columns.push('"') }
+            else { columns.push(game[col + 7 * row])}
+        }
+        columns.push('-')
     }
 
-    let lines_string = lines.join('-')
-    console.log(lines_string)
-
-    if (/XXXX/.test(lines_string)) {
-        return 'X'
-    }
-
-    if (/OOOO/.test(lines_string)) {
-        return 'O'
-    }
-    
-    return null   
+    let string = columns.join('')
+    console.log(string)
+    if (/XXXX/.test(string)) { return 'X' }
+    if (/OOOO/.test(string)) { return 'O' }
+    return null
 }
 
 function calculateWinnerByDiagonals(game) {
@@ -82,31 +86,17 @@ function calculateWinnerByDiagonals(game) {
         [13, 19, 25, 31, 37, 43],
         [20, 26, 32, 38, 44],
         [27, 33, 39, 45]
-    ] 
-
-    for (let i = 0; i<diagonals_indexes.length; i++) {        
+    ]
+    for (let i = 0; i<diagonals_indexes.length; i++) {
         let diagonal = []
         diagonals_indexes[i].forEach(index => diagonal.push(game[index]))
-
         for (let i = 0; i<diagonal.length; i++) {
-            if (diagonal[i] === null) {
-
-                diagonal[i] = '@'
-            }
+            if (diagonal[i] === null) { diagonal[i] = '@' }
         }
-
-        if (/XXXX/.test(diagonal.join(''))) {
-            
-            return 'X'
-        }
-
-        if (/OOOO/.test(diagonal.join(''))) {
-            return 'O'
-        }        
+        if (/XXXX/.test(diagonal.join(''))) { return 'X' }
+        if (/OOOO/.test(diagonal.join(''))) { return 'O' }
     }
-    
     return null   
 }
-
 
 module.exports = Board

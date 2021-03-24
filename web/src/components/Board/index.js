@@ -27,6 +27,19 @@ const Board = (p) => {
         joinError: false,
         socketID: null
     })
+    
+    const [game, setGame] = useState({game: new Array(49).fill(null)})
+    const [piece, setPiece] = useState({piece:'X'})
+    const [turn, setTurn2] = useState({turn:true})
+    const [end, setEnd] = useState({end:false})
+    const [room, setRoom] = useState({room:''})
+    const [statusMessage, setStatusMessage] = useState({statusMessage:''})
+    const [currentPlayerScore, setCurrentPlayerScore] = useState({setCurrentPlayerScore: 0})
+    const [opponentPlayer, setOpponentPlayer] = useState({opponentPlayer: []})
+    const [waiting, setWating] = useState({waiting:false})
+    const [joinError, setJoinError] = useState({joinError: false})
+    const [socketID, setSocketID] = useState({socketID: null})
+
 
 
     useEffect(() => {    
@@ -34,8 +47,7 @@ const Board = (p) => {
             ignoreQueryPrefix: true
         })
         setState(state =>({...state, room:room}))
-        let socketID = state.socketID
-        socket.emit('newRoomJoin', {room, name, socketID})
+        socket.emit('newRoomJoin', {room, name})
         
 
         socket.on('waiting', () => {
@@ -63,7 +75,7 @@ const Board = (p) => {
         return () => {
             socket.disconnect()
         }
-    }, [state])
+    }, [])
 
 
 
