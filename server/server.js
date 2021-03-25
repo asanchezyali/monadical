@@ -1,6 +1,7 @@
 const {randRoom, randPiece} = require('./utilities/utils')
 const Player = require('./utilities/player')
 const Board = require('./utilities/board')
+const {createRoom, createPlayer, createMove, updateRoom} = require('./database/postgresql')
 
 const cors = require('cors')
 const express = require('express')
@@ -25,7 +26,7 @@ const makeRoom = (resolve) => {
     while (rooms.has(newRoom)) {
         newRoom = randRoom()
     }
-    rooms.set(newRoom, {roomId: newRoom, players: [], board: null})
+    rooms.set(newRoom, {roomId: newRoom, players: [], board: null, winner: null, status: 'inactive'})
     resolve(newRoom)
 }
 
@@ -118,7 +119,6 @@ io.on('connection', socket => {
                 // Assign the piece to each player in the backend data structure and then
                 // emit it to each of the player so they can store it in their state
                 pieceAssignment(room)
-                console.log(room)
                 let currentPlayers = rooms.get(room).players
                 for (const player of currentPlayers) {
                     io.to(player.id).emit('pieceAssignment', {piece: player.piece, id: player.id})
@@ -132,6 +132,9 @@ io.on('connection', socket => {
                 const turn = currentRoom.board.turn
                 const players = currentRoom.players.map((player) => [player.id, player.name])
                 io.to(room).emit('starting', {gameState, players, turn})
+                createRoom(currentRoom).then(r => console.log('Room saved ...'))
+                createPlayer(currentRoom.players[0]).then(r => console.log('Player saved ...'))
+                createPlayer(currentRoom.players[1]).then(r => console.log('Player saved ...'))
             }
 
             // Too many people so we kick them out of the room and redirect
@@ -150,12 +153,15 @@ io.on('connection', socket => {
 
     socket.on('move', ({room, piece, index}) => {
         try {
-            let currentBoard = rooms.get(room).board
-            console.log(rooms.get(room))
+            let currentRoom = rooms.get(room)
+            let currentBoard = currentRoom.board
             currentBoard.move(index, piece)
+            let player = currentRoom.players.filter(player => player.piece === piece)[0]
+            createMove(player, index).then(r => console.log('Registered a move ...'))
 
             if (currentBoard.checkWinner(piece)) {
                 io.to(room).emit('winner', {gameState: currentBoard.game, id: socket.id})
+                updateRoom(room, piece).then(r => console.log('Game finished ...'))
             } else if (currentBoard.checkDraw()) {
                 io.to(room).emit('draw', {gameState: currentBoard.game})
             } else {

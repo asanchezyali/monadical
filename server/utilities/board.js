@@ -53,7 +53,6 @@ function calculateWinnerByRows(game) {
 }
 
 function calculateWinnerByColumns(game) {
-    console.log(game)
     let columns = []
     for (let col = 0; col < 7; col++) {
         for (let row = 0; row < 7; row++){
@@ -64,7 +63,6 @@ function calculateWinnerByColumns(game) {
     }
 
     let string = columns.join('')
-    console.log(string)
     if (/XXXX/.test(string)) { return 'X' }
     if (/OOOO/.test(string)) { return 'O' }
     return null
