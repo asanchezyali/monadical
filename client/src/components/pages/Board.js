@@ -23,7 +23,6 @@ class Board extends Component {
             statusMessage: "",
             currentPlayerScore: 0,
             opponentPlayer: [],
-            //State to check when a new user join
             waiting: false,
             joinError: false,
         };
@@ -31,8 +30,7 @@ class Board extends Component {
     }
 
     componentDidMount() {
-        //Getting the room and the username information from the url
-        //Then emit to back end to process
+
         this.socket = io(ENDPOINT);
         const { room, name } = qs.parse(window.location.search, {
             ignoreQueryPrefix: true,
@@ -40,8 +38,6 @@ class Board extends Component {
         this.setState({ room });
         this.socket.emit("newRoomJoin", { room, name });
 
-        //New user join, logic decide on backend whether to display
-        //the actual game or the wait screen or redirect back to the main page
         this.socket.on("waiting", () =>
             this.setState({
                 waiting: true,
@@ -55,14 +51,11 @@ class Board extends Component {
         });
         this.socket.on("joinError", () => this.setState({ joinError: true }));
 
-        //Listening to the assignment of piece store the piece along with the in state
-        //socket id in local socketID variable
         this.socket.on("pieceAssignment", ({ piece, id }) => {
             this.setState({ piece: piece });
             this.socketID = id;
         });
 
-        //Game play logic events
         this.socket.on("update", ({ gameState, turn }) =>
             this.handleUpdate(gameState, turn)
         );
@@ -76,7 +69,6 @@ class Board extends Component {
         );
     }
 
-    //Setting the states to start a game when new user join
     gameStart(gameState, players, turn) {
         const opponent = players.filter(([id, name]) => id !== this.socketID)[0][1]
         this.setState({ opponentPlayer: [opponent, 0], end: false });
@@ -85,7 +77,6 @@ class Board extends Component {
         this.setMessage();
     }
 
-    //When some one make a move, emit the event to the back end for handling
     handleClick = (index) => {
         const { game, piece, end, turn, room } = this.state;
         if (!(index % 7 === 0 || index % 7 === 6)) {
@@ -96,14 +87,12 @@ class Board extends Component {
         }
     };
 
-    //Setting the states each move when the game haven't ended (no wins or draw)
     handleUpdate(gameState, turn) {
         this.setBoard(gameState);
         this.setTurn(turn);
         this.setMessage();
     }
 
-    //Setting the states when some one wins
     handleWin(id, gameState) {
         this.setBoard(gameState);
         if (this.socketID === id) {
@@ -124,7 +113,6 @@ class Board extends Component {
         this.setState({ end: true });
     }
 
-    //Setting the states when there is a draw at the end
     handleDraw(gameState) {
         this.setBoard(gameState);
         this.setState({ end: true, statusMessage: "Draw" });
@@ -134,15 +122,12 @@ class Board extends Component {
         this.socket.emit("playAgainRequest", this.state.room);
     };
 
-    //Handle the restart event from the back end
     handleRestart(gameState, turn) {
         this.setBoard(gameState);
         this.setTurn(turn);
         this.setMessage();
         this.setState({ end: false });
     }
-
-    //Some utilities methods to set the states of the board
 
     setMessage() {
         const message = this.state.turn
