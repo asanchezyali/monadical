@@ -4,7 +4,7 @@ import Choice from '../functional/Choice.js'
 import InputForm from '../functional/InputForm.js'
 import Loading from '../functional/Loading'
 import Error from '../functional/Error'
-import logo from './logo.png'
+import logo from './logo.svg'
 
 import {Redirect} from 'react-router-dom'
 
