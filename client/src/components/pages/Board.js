@@ -35,6 +35,7 @@ class Board extends Component {
         const { room, name } = qs.parse(window.location.search, {
             ignoreQueryPrefix: true,
         });
+
         this.setState({ room });
         this.socket.emit("newRoomJoin", { room, name });
 
@@ -45,10 +46,12 @@ class Board extends Component {
                 opponentPlayer: [],
             })
         );
+
         this.socket.on("starting", ({ gameState, players, turn }) => {
             this.setState({ waiting: false });
             this.gameStart(gameState, players, turn);
         });
+
         this.socket.on("joinError", () => this.setState({ joinError: true }));
 
         this.socket.on("pieceAssignment", ({ piece, id }) => {
@@ -56,17 +59,10 @@ class Board extends Component {
             this.socketID = id;
         });
 
-        this.socket.on("update", ({ gameState, turn }) =>
-            this.handleUpdate(gameState, turn)
-        );
-        this.socket.on("winner", ({ gameState, id }) =>
-            this.handleWin(id, gameState)
-        );
+        this.socket.on("update", ({ gameState, turn }) => this.handleUpdate(gameState, turn));
+        this.socket.on("winner", ({ gameState, id }) => this.handleWin(id, gameState));
         this.socket.on("draw", ({ gameState }) => this.handleDraw(gameState));
-
-        this.socket.on("restart", ({ gameState, turn }) =>
-            this.handleRestart(gameState, turn)
-        );
+        this.socket.on("restart", ({ gameState, turn }) => this.handleRestart(gameState, turn));
     }
 
     gameStart(gameState, players, turn) {
