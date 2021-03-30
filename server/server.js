@@ -50,8 +50,13 @@ function pieceAssignment(room) {
     const firstPiece = randPiece()
     const lastPiece = firstPiece === 'X' ? 'O' : 'X'
     let currentRoom = rooms.get(room)
-    currentRoom.players[0].piece = firstPiece
-    currentRoom.players[1].piece = lastPiece
+    if (currentRoom.mode === 'bot') {
+        currentRoom.players[0].piece = 'X'
+        currentRoom.players[1].piece = 'O'
+    } else {
+        currentRoom.players[0].piece = firstPiece
+        currentRoom.players[1].piece = lastPiece
+    }
 }
 
 function newGame(room) {
@@ -123,7 +128,7 @@ io.on('connection', socket => {
             const currentRoom = rooms.get(room)
             if (currentRoom.mode === 'bot') {
                 socket.join(room)
-                const newPlayer = new Player('bot', room, 'bot')
+                const newPlayer = new Player('bot', room, id + 'bot')
                 joinRoom(newPlayer, room)
 
                 pieceAssignment(room)
@@ -134,9 +139,10 @@ io.on('connection', socket => {
                     if (player.name !== 'bot') {
                         io.to(player.id).emit('pieceAssignment', {piece: player.piece, id: player.id})
                         turn = player.piece
-                    }
+                     }
                 }
                 newGame(room)
+
                 const currentRoom = rooms.get(room)
                 const gameState = currentRoom.board.game
                 const players = currentRoom.players.map((player) => [player.id, player.name])
@@ -194,6 +200,11 @@ io.on('connection', socket => {
 
             if (currentRoom.mode === 'bot'){
                 const pieceBot = playBot(room, piece)
+                if (currentBoard.checkWinner(piece)) {
+                    io.to(room).emit('winner', {gameState: currentBoard.game, id: player.id})
+                    updateRoom(room, piece).then(r => console.log('Game finished ...'))
+                    return
+                }
                 if (currentBoard.checkWinner(pieceBot)) {
                     io.to(room).emit('winner', {gameState: currentBoard.game, id: 'bot'})
                     updateRoom(room, pieceBot).then(r => console.log('Game finished ...'))
@@ -232,6 +243,7 @@ io.on('connection', socket => {
             }
 
             io.to(room).emit('restart', {gameState: currentRoom.board.game, turn: currentRoom.board.turn})
+
         } catch (error) {
             console.log(error.message)
         } finally {
