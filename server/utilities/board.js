@@ -31,7 +31,7 @@ class Board{
 
     reset(){
         this.game = new Array(49).fill(null)
-        this.tur = 'X'
+        this.turn = 'X'
     }
 }
 
@@ -56,7 +56,7 @@ function calculateWinnerByColumns(game) {
     let columns = []
     for (let col = 0; col < 7; col++) {
         for (let row = 0; row < 7; row++){
-            if (game[col + 7 * row] === null) { columns.push('"') }
+            if (game[col + 7 * row] === null) { columns.push('@') }
             else { columns.push(game[col + 7 * row])}
         }
         columns.push('-')

@@ -66,7 +66,8 @@ class Board extends Component {
     }
 
     gameStart(gameState, players, turn) {
-        const opponent = players.filter(([id, name]) => id !== this.socketID)[0][1]
+        console.log(players)
+        const opponent = players.filter(([id]) => id !== this.socketID)[0][1]
         this.setState({ opponentPlayer: [opponent, 0], end: false });
         this.setBoard(gameState);
         this.setTurn(turn);

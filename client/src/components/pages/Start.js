@@ -24,6 +24,7 @@ class Start extends React.Component {
             serverConfirmed: false,
             error: false,
             errorMessage: '',
+            mode: 'person'
         }
     }
 
@@ -44,11 +45,19 @@ class Start extends React.Component {
     }
 
     onChoice = (choice) => {
-        const gameChoice = choice === 'new' ? true : false
-        const newState = {newGame: gameChoice}
+        let newState
+        if (choice === 'new bot') {
+            newState = {newGame: true, mode: 'bot'}
+        }
+
+        if (choice === 'new') {
+            newState = {newGame: true}
+        }
+
         this.setState(newState, () => {
             this.stepForward()
         })
+
     }
 
     validate = () => {
@@ -63,7 +72,7 @@ class Start extends React.Component {
         this.setState({loading: true})
         if (this.validate()) {
             if (this.state.newGame) {
-                this.socket.emit('newGame')
+                this.socket.emit('newGame' , {mode: this.state.mode})
             } else {
                 this.socket.emit('joining', {room: this.state.room})
             }

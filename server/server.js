@@ -23,13 +23,18 @@ const makeRoom = (resolve) => {
     while (rooms.has(newRoom)) {
         newRoom = randRoom()
     }
-    rooms.set(newRoom, {roomId: newRoom, players: [], board: null, winner: null, status: 'inactive'})
+    rooms.set(newRoom, {roomId: newRoom, players: [], board: null, winner: null, status: 'inactive', mode: 'person'})
     resolve(newRoom)
 }
 
 const joinRoom = (player, room) => {
     let currentRoom = rooms.get(room)
     currentRoom.players.push(player)
+}
+
+const setMode = (room, mode) => {
+    let currentRoom = rooms.get(room)
+    currentRoom.mode = mode
 }
 
 function kick(room) {
@@ -54,11 +59,32 @@ function newGame(room) {
     currentRoom.board = new Board
 }
 
+function playBot(room, piece) {
+    let currentRoom = rooms.get(room)
+    let currentBoard = currentRoom.board
+    let game = currentBoard.game
+    while (true) {
+        let index = Math.floor(Math.random() * 48)
+        if (!(index % 7 === 0 || index % 7 === 6)) {
+            if (!(game[index - 1] === null && game[index + 1] === null) && game[index] === null){
+                if (piece !== 'X') {
+                    currentBoard.move(index, 'X')
+                    return 'X'
+                } else {
+                    currentBoard.move(index, 'O')
+                    return 'O'
+                }
+            }
+        }
+    }
+}
+
 io.on('connection', socket => {
 
-    socket.on('newGame', () => {
+    socket.on('newGame', ({mode}) => {
         try {
             new Promise(makeRoom).then((room) => {
+                setMode(room, mode)
                 socket.emit('newGameCreated', room)
             })
         } catch (error) {
@@ -71,7 +97,6 @@ io.on('connection', socket => {
     socket.on('joining', ({room}) => {
         try {
             if (rooms.has(room)) {
-                console.log('joinConfirmed')
                 socket.emit('joinConfirmed')
             } else {
                 socket.emit('errorMessage', 'No room with that ID found')
@@ -95,17 +120,46 @@ io.on('connection', socket => {
             joinRoom(newPlayer, room)
 
             const peopleInRoom = getRoomPlayersNum(room)
+            const currentRoom = rooms.get(room)
+            if (currentRoom.mode === 'bot') {
+                socket.join(room)
+                const newPlayer = new Player('bot', room, 'bot')
+                joinRoom(newPlayer, room)
 
-            if (peopleInRoom === 1) {
+                pieceAssignment(room)
+
+                let currentPlayers = rooms.get(room).players
+                let turn
+                for (const player of currentPlayers) {
+                    if (player.name !== 'bot') {
+                        io.to(player.id).emit('pieceAssignment', {piece: player.piece, id: player.id})
+                        turn = player.piece
+                    }
+                }
+                newGame(room)
+                const currentRoom = rooms.get(room)
+                const gameState = currentRoom.board.game
+                const players = currentRoom.players.map((player) => [player.id, player.name])
+                io.to(room).emit('starting', {gameState, players, turn})
+                createRoom(currentRoom).then(r => console.log('Room saved ...'))
+                createPlayer(currentRoom.players[0]).then(r => console.log('Player saved ...'))
+                createPlayer(currentRoom.players[1]).then(r => console.log('Player saved ...'))
+
+            }
+
+            if (peopleInRoom === 1 && currentRoom.mode === 'person') {
                 io.to(room).emit('waiting')
             }
 
-            if (peopleInRoom === 2) {
+            if (peopleInRoom === 2 && currentRoom.mode === 'person') {
+
                 pieceAssignment(room)
+
                 let currentPlayers = rooms.get(room).players
                 for (const player of currentPlayers) {
                     io.to(player.id).emit('pieceAssignment', {piece: player.piece, id: player.id})
                 }
+
                 newGame(room)
 
                 const currentRoom = rooms.get(room)
@@ -118,7 +172,7 @@ io.on('connection', socket => {
                 createPlayer(currentRoom.players[1]).then(r => console.log('Player saved ...'))
             }
 
-            if (peopleInRoom === 3) {
+            if (peopleInRoom === 3 && currentRoom.mode === 'person') {
                 socket.leave(room)
                 kick(room)
                 io.to(socket.id).emit('joinError')
@@ -138,14 +192,27 @@ io.on('connection', socket => {
             let player = currentRoom.players.filter(player => player.piece === piece)[0]
             createMove(player, index).then(r => console.log('Registered a move ...'))
 
+            if (currentRoom.mode === 'bot'){
+                const pieceBot = playBot(room, piece)
+                if (currentBoard.checkWinner(pieceBot)) {
+                    io.to(room).emit('winner', {gameState: currentBoard.game, id: 'bot'})
+                    updateRoom(room, pieceBot).then(r => console.log('Game finished ...'))
+                    return
+                }
+            }
+
             if (currentBoard.checkWinner(piece)) {
                 io.to(room).emit('winner', {gameState: currentBoard.game, id: socket.id})
                 updateRoom(room, piece).then(r => console.log('Game finished ...'))
             } else if (currentBoard.checkDraw()) {
                 io.to(room).emit('draw', {gameState: currentBoard.game})
             } else {
-                currentBoard.switchTurn()
-                io.to(room).emit('update', {gameState: currentBoard.game, turn: currentBoard.turn})
+                if (currentRoom.mode === 'bot'){
+                    io.to(room).emit('update', {gameState: currentBoard.game, turn: currentBoard.turn})
+                } else {
+                    currentBoard.switchTurn()
+                    io.to(room).emit('update', {gameState: currentBoard.game, turn: currentBoard.turn})
+                }
             }
         } catch (error) {
             console.log(error.message)
