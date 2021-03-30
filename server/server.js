@@ -1,6 +1,6 @@
 const {randRoom, randPiece} = require('./utilities/utils')
 const Player = require('./utilities/player')
-const Board = require('./utilities/board')
+const {Board, calculateWinnerByRows, calculateWinnerByDiagonals, calculateWinnerByColumns }= require('./utilities/board')
 const {createRoom, createPlayer, createMove, updateRoom} = require('./database/postgresql')
 
 const cors = require('cors')
@@ -64,24 +64,52 @@ function newGame(room) {
     currentRoom.board = new Board
 }
 
-function playBot(room, piece) {
+function validateMove(index, game){
+    let validateEdgesPosition = (index % 7 === 0 || index % 7 === 6) && game[index] === null
+    let validateInternalPosition = !(index % 7 === 0 || index % 7 === 6)
+    let validateInternalPositionAvailable = !(game[index - 1] === null && game[index + 1] === null) && game[index] === null
+    return (validateInternalPosition && validateInternalPositionAvailable) || validateEdgesPosition
+}
+
+function checkWinner(game, player){
+    const isWinnerByRows = calculateWinnerByRows(game) === player.piece
+    const isWinnerByDiagonals = calculateWinnerByDiagonals(game) === player.piece
+    const isWinnerByColumns = calculateWinnerByColumns(game) === player.piece
+    return isWinnerByRows || isWinnerByDiagonals || isWinnerByColumns
+}
+
+function playBot(room) {
     let currentRoom = rooms.get(room)
     let currentBoard = currentRoom.board
-    let game = currentBoard.game
-    while (true) {
-        let index = Math.floor(Math.random() * 48)
-        if (!(index % 7 === 0 || index % 7 === 6)) {
-            if (!(game[index - 1] === null && game[index + 1] === null) && game[index] === null){
-                if (piece !== 'X') {
-                    currentBoard.move(index, 'X')
-                    return 'X'
-                } else {
-                    currentBoard.move(index, 'O')
-                    return 'O'
-                }
+    let player = currentRoom.players[0]
+    let bot = currentRoom.players[1]
+    let game = [...currentBoard.game]
+
+    // best move to win
+    for (let index = 0; index < 49; index ++){
+        if (validateMove(index, game)) {
+            game[index] = 'O'
+            if (checkWinner(game, bot)) {
+                currentBoard.move(index, bot.piece)
+                return 'O'
             }
+            game[index] = 'X'
+            if (checkWinner(game, player)) {
+                currentBoard.move(index, bot.piece)
+                return 'O'
+            }
+            game[index] = null
         }
     }
+
+    while (true) {
+        let index = Math.floor(Math.random() * 48)
+        if (validateMove(index, game)) {
+            currentBoard.move(index, bot.piece)
+            return 'O'
+        }
+    }
+
 }
 
 io.on('connection', socket => {
@@ -199,7 +227,7 @@ io.on('connection', socket => {
             createMove(player, index).then(r => console.log('Registered a move ...'))
 
             if (currentRoom.mode === 'bot'){
-                const pieceBot = playBot(room, piece)
+                const pieceBot = playBot(room)
                 if (currentBoard.checkWinner(piece)) {
                     io.to(room).emit('winner', {gameState: currentBoard.game, id: player.id})
                     updateRoom(room, piece).then(r => console.log('Game finished ...'))
@@ -218,7 +246,7 @@ io.on('connection', socket => {
             } else if (currentBoard.checkDraw()) {
                 io.to(room).emit('draw', {gameState: currentBoard.game})
             } else {
-                if (currentRoom.mode === 'bot'){
+                if (currentRoom.mode === 'bot') {
                     io.to(room).emit('update', {gameState: currentBoard.game, turn: currentBoard.turn})
                 } else {
                     currentBoard.switchTurn()

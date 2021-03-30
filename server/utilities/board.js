@@ -97,4 +97,4 @@ function calculateWinnerByDiagonals(game) {
     return null   
 }
 
-module.exports = Board
+module.exports = {Board, calculateWinnerByColumns, calculateWinnerByDiagonals, calculateWinnerByRows}
